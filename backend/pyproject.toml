@@ -1,0 +1,46 @@
+[project]
+name = "roadvisionai-backend"
+version = "0.1.0"
+description = "RoadVisionAI — AI-powered road inspection & predictive maintenance platform (DGR Maroc)"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.35",
+    "sqlalchemy[asyncio]>=2.0,<3.0",
+    "asyncpg>=0.30",
+    "geoalchemy2>=0.16",
+    "alembic>=1.16",
+    "pydantic>=2.11",
+    "pydantic-settings>=2.7",
+    "pyjwt>=2.10",
+    "passlib>=1.7",
+    "argon2-cffi>=23.1",
+    "structlog>=25.1",
+    "minio>=7.2",
+    "python-multipart>=0.0.20",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "httpx>=0.28",
+    "ruff>=0.9",
+    "pre-commit>=4.0",
+    "testcontainers[postgres]>=4.9",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "ASYNC"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.uv]
+package = false

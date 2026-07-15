@@ -1,0 +1,104 @@
+# =====================================================================
+# RoadVisionAI — Docker Compose (Deployment Diagram, TechStack §7)
+# Services: nginx | backend | postgres+postgis | chromadb | minio (+init)
+# The `frontend` service joins in the Angular phase (Week 6).
+# Usage:  cp .env.example .env  &&  docker compose up -d --build
+# =====================================================================
+
+name: roadvisionai
+
+services:
+  postgres:
+    image: imresamu/postgis:17-3.5
+    container_name: rv-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # Executed once on first start, in lexical order:
+      #   01_schema_v4.2.sql  -> the verified production schema
+      #   02_seed_data.sql    -> damage_types (8 classes CDC), admin user
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: rv-chromadb
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+    volumes:
+      - chroma_data:/chroma/chroma
+    ports:
+      - "8001:8000"
+
+  minio:
+    image: minio/minio:latest
+    container_name: rv-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: rv-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    entrypoint: ["/bin/sh", "/init-buckets.sh"]
+    volumes:
+      - ./infrastructure/minio/init-buckets.sh:/init-buckets.sh:ro
+
+  backend:
+    build: ./backend
+    container_name: rv-backend
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      MINIO_ENDPOINT: minio:9000
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: rv-nginx
+    depends_on:
+      - backend
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+
+volumes:
+  pg_data:
+  chroma_data:
+  minio_data:
