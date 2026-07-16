@@ -14,12 +14,20 @@ Rules honoured here:
 import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, FetchedValue, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import CITEXT, ENUM, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.ai_model import AiModel
+    from app.db.models.inspection import Inspection
+    from app.db.models.knowledge import KnowledgeDocument
+    from app.db.models.maintenance import MaintenancePlan, MaintenanceRecommendation, Rule
+    from app.db.models.notification import Notification
 
 
 class UserRole(enum.StrEnum):
@@ -75,6 +83,35 @@ class User(Base):
         server_default=text("1"),
         server_onupdate=FetchedValue(),  # trigger fn_increment_version
     )
+
+    # --- Reverse relationships (paired with domain models via back_populates) ---
+    trained_models: Mapped[list["AiModel"]] = relationship("AiModel", back_populates="trainer")
+    inspections_created: Mapped[list["Inspection"]] = relationship(
+        "Inspection", foreign_keys="Inspection.created_by", back_populates="creator"
+    )
+    inspections_validated: Mapped[list["Inspection"]] = relationship(
+        "Inspection", foreign_keys="Inspection.validated_by", back_populates="validator"
+    )
+    knowledge_documents: Mapped[list["KnowledgeDocument"]] = relationship(
+        "KnowledgeDocument", back_populates="uploader"
+    )
+    maintenance_plans: Mapped[list["MaintenancePlan"]] = relationship(
+        "MaintenancePlan", back_populates="validator"
+    )
+    recommendations_rejected: Mapped[list["MaintenanceRecommendation"]] = relationship(
+        "MaintenanceRecommendation",
+        foreign_keys="MaintenanceRecommendation.rejected_by",
+        back_populates="rejector",
+    )
+    recommendations_validated: Mapped[list["MaintenanceRecommendation"]] = relationship(
+        "MaintenanceRecommendation",
+        foreign_keys="MaintenanceRecommendation.validated_by",
+        back_populates="validator",
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification", back_populates="user"
+    )
+    rules: Mapped[list["Rule"]] = relationship("Rule", back_populates="author")
 
     role_links: Mapped[list["UserRoleLink"]] = relationship(back_populates="user")
 

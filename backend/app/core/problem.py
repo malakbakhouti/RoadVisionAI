@@ -38,8 +38,6 @@ def register_problem_handlers(app: FastAPI) -> None:
         return resp
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exc_handler(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def validation_exc_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
         resp = problem(422, "Request validation failed", str(request.url.path))
         return resp

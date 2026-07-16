@@ -21,15 +21,11 @@ async def login(
     body: LoginRequest, request: Request, db: DbSessionDep, settings: SettingsDep
 ) -> TokenResponse:
     ip, ua = _client_meta(request)
-    return await AuthService(db, settings).login(
-        body.email, body.password, ip=ip, user_agent=ua
-    )
+    return await AuthService(db, settings).login(body.email, body.password, ip=ip, user_agent=ua)
 
 
 @router.post("/refresh", response_model=TokenResponse, summary="Rotate tokens (SD01)")
-async def refresh(
-    body: RefreshRequest, db: DbSessionDep, settings: SettingsDep
-) -> TokenResponse:
+async def refresh(body: RefreshRequest, db: DbSessionDep, settings: SettingsDep) -> TokenResponse:
     return await AuthService(db, settings).refresh(body.refresh_token)
 
 

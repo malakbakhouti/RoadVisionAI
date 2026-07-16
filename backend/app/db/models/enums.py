@@ -1,0 +1,107 @@
+"""PostgreSQL ENUM mirrors (schema v4.2 — 14 types; user_role lives in user.py)."""
+
+import enum
+
+
+class DamageCategory(enum.StrEnum):
+    FISSURE = "FISSURE"
+    DEFORMATION = "DEFORMATION"
+    DEGRADATION_SURFACE = "DEGRADATION_SURFACE"
+    MARQUAGE = "MARQUAGE"
+
+
+class DocType(enum.StrEnum):
+    NORME_DGR = "NORME_DGR"
+    GUIDE_TECHNIQUE = "GUIDE_TECHNIQUE"
+    PCI_MANUAL = "PCI_MANUAL"
+    AASHTO = "AASHTO"
+    ASTM = "ASTM"
+    HISTORIQUE = "HISTORIQUE"
+    BONNE_PRATIQUE = "BONNE_PRATIQUE"
+
+
+class InspectionStatus(enum.StrEnum):
+    EN_ATTENTE = "EN_ATTENTE"
+    EN_COURS = "EN_COURS"
+    TERMINEE = "TERMINEE"
+    ANNULEE = "ANNULEE"
+    VALIDEE = "VALIDEE"
+    ERREUR = "ERREUR"
+
+
+class MaintenanceStrategy(enum.StrEnum):
+    COLMATAGE = "COLMATAGE"
+    RESURFACAGE = "RESURFACAGE"
+    RECONSTRUCTION = "RECONSTRUCTION"
+    REHABILITATION = "REHABILITATION"
+    SURVEILLANCE = "SURVEILLANCE"
+
+
+class ModelFramework(enum.StrEnum):
+    YOLOV11 = "YOLOV11"
+    YOLOV8 = "YOLOV8"
+    PYTORCH = "PYTORCH"
+    TENSORFLOW = "TENSORFLOW"
+    ONNX = "ONNX"
+    OTHER = "OTHER"
+
+
+class ModelStatus(enum.StrEnum):
+    TRAINING = "TRAINING"
+    VALIDATING = "VALIDATING"
+    STAGING = "STAGING"
+    PRODUCTION = "PRODUCTION"
+    DEPRECATED = "DEPRECATED"
+    FAILED = "FAILED"
+
+
+class NotifType(enum.StrEnum):
+    ALERTE_CRITIQUE = "ALERTE_CRITIQUE"
+    VALIDATION_REQUISE = "VALIDATION_REQUISE"
+    RAPPORT_PRET = "RAPPORT_PRET"
+    MISE_A_JOUR_MODELE = "MISE_A_JOUR_MODELE"
+    INFO = "INFO"
+
+
+class PlanStatus(enum.StrEnum):
+    BROUILLON = "BROUILLON"
+    SOUMIS = "SOUMIS"
+    VALIDE = "VALIDE"
+    REJETE = "REJETE"
+    EN_COURS = "EN_COURS"
+    TERMINE = "TERMINE"
+
+
+class PriorityLevel(enum.StrEnum):
+    P0_CRITIQUE = "P0_CRITIQUE"
+    P1_URGENT = "P1_URGENT"
+    P2_PLANIFIE = "P2_PLANIFIE"
+    P3_SURVEILLANCE = "P3_SURVEILLANCE"
+    P4_EXCELLENT = "P4_EXCELLENT"
+
+
+class RecStatus(enum.StrEnum):
+    EN_ATTENTE = "EN_ATTENTE"
+    VALIDEE = "VALIDEE"
+    MODIFIEE = "MODIFIEE"
+    REJETEE = "REJETEE"
+
+
+class RoadType(enum.StrEnum):
+    NATIONALE = "NATIONALE"
+    REGIONALE = "REGIONALE"
+    PROVINCIALE = "PROVINCIALE"
+    RURALE = "RURALE"
+
+
+class SeverityLevel(enum.StrEnum):
+    FAIBLE = "FAIBLE"
+    MODERE = "MODERE"
+    GRAVE = "GRAVE"
+    CRITIQUE = "CRITIQUE"
+
+
+class TrendDirection(enum.StrEnum):
+    AMELIORATION = "AMELIORATION"
+    STABLE = "STABLE"
+    DEGRADATION = "DEGRADATION"

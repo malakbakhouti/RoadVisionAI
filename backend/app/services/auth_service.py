@@ -59,8 +59,12 @@ class AuthService:
 
         await self._users.touch_last_login(user)
         await self._audit.log(
-            action="LOGIN", entity_type="users", entity_id=user.id,
-            user_id=user.id, ip_address=ip, user_agent=user_agent,
+            action="LOGIN",
+            entity_type="users",
+            entity_id=user.id,
+            user_id=user.id,
+            ip_address=ip,
+            user_agent=user_agent,
         )
         await self._session.commit()
         log.info("login_success", user_id=str(user.id), role=user.role.value)
@@ -79,9 +83,7 @@ class AuthService:
         log.info("token_refreshed", user_id=str(user.id))
         return self._issue_tokens(user)
 
-    async def logout(
-        self, user: User, *, ip: str | None, user_agent: str | None
-    ) -> None:
+    async def logout(self, user: User, *, ip: str | None, user_agent: str | None) -> None:
         """Stateless logout: audit the event; client discards its tokens.
 
         Schema v4.2 has no token store (and must not be modified), so
@@ -89,8 +91,12 @@ class AuthService:
         TTL bounds residual validity.
         """
         await self._audit.log(
-            action="LOGOUT", entity_type="users", entity_id=user.id,
-            user_id=user.id, ip_address=ip, user_agent=user_agent,
+            action="LOGOUT",
+            entity_type="users",
+            entity_id=user.id,
+            user_id=user.id,
+            ip_address=ip,
+            user_agent=user_agent,
         )
         await self._session.commit()
         log.info("logout", user_id=str(user.id))

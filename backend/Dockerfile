@@ -19,6 +19,8 @@ COPY --from=builder /srv/venv /srv/venv
 ENV PATH="/srv/venv/bin:$PATH" PYTHONUNBUFFERED=1
 
 COPY app ./app
+COPY alembic.ini ./alembic.ini
+COPY alembic ./alembic
 
 USER roadvision
 EXPOSE 8000

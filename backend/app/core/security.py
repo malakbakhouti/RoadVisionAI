@@ -50,7 +50,11 @@ class TokenError(Exception):
 
 
 def _create_token(
-    *, subject: str, token_type: TokenType, expires_delta: timedelta, settings: Settings,
+    *,
+    subject: str,
+    token_type: TokenType,
+    expires_delta: timedelta,
+    settings: Settings,
     extra_claims: dict[str, Any] | None = None,
 ) -> str:
     now = datetime.now(UTC)
