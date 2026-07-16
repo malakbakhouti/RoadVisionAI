@@ -6,3 +6,11 @@ __pycache__/
 .ruff_cache/
 backend/uv.lock.tmp
 .DS_Store
+# Données propriétaires DGR & artefacts ML lourds — JAMAIS sur GitHub
+ai/datasets/
+dataset/
+ml/runs/
+*.pt
+*.mp4
+*.dbf
+*.DBF
