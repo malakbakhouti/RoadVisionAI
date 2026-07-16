@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     minio_access_key: str
     minio_secret_key: str
     minio_secure: bool = False
+    # Endpoint used ONLY to sign browser-facing presigned URLs. Inside Docker
+    # the SDK talks to minio:9000, but that hostname does not resolve outside
+    # the compose network — so URLs are signed against this public endpoint.
+    minio_public_endpoint: str = "localhost:9000"
     minio_bucket_road_images: str = "road-images"
     minio_bucket_annotated: str = "annotated-images"
     minio_bucket_reports: str = "reports"
