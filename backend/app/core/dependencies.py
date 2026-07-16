@@ -16,10 +16,22 @@ from app.core.security import TokenError, decode_token
 from app.db.models.user import User, UserRole
 from app.db.session import get_db
 from app.repositories.user_repository import UserRepository
+from app.services.storage_service import StorageService
 
 # --- Infrastructure ----------------------------------------------------------
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DbSessionDep = Annotated[AsyncSession, Depends(get_db)]
+
+# --- Storage (MinIO) -----------------------------------------------------------
+_storage_singleton: StorageService | None = None
+
+
+def get_storage_service(settings: SettingsDep) -> StorageService:
+    global _storage_singleton
+    if _storage_singleton is None:
+        _storage_singleton = StorageService(settings)
+    return _storage_singleton
+
 
 # --- Security (SD01, RBAC per UC0-UC3) ---------------------------------------
 _bearer = HTTPBearer(auto_error=False)
