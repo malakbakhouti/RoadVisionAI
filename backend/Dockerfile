@@ -12,11 +12,21 @@ RUN uv sync --no-dev --frozen --no-install-project 2>/dev/null \
 # Stage 2: minimal runtime image
 FROM python:3.13-slim-bookworm AS runtime
 
+# System libs required by OpenCV (pulled by ultralytics) on slim images
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 libxcb1 libsm6 libxext6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# System libs required by OpenCV (pulled by ultralytics) on slim images
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 libxcb1 libsm6 libxext6 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd -r roadvision && useradd -r -g roadvision roadvision
 WORKDIR /srv/app
 
 COPY --from=builder /srv/venv /srv/venv
-ENV PATH="/srv/venv/bin:$PATH" PYTHONUNBUFFERED=1
+ENV PATH="/srv/venv/bin:$PATH" PYTHONUNBUFFERED=1 YOLO_CONFIG_DIR=/tmp/ultralytics MPLCONFIGDIR=/tmp/matplotlib
 
 COPY app ./app
 COPY alembic.ini ./alembic.ini

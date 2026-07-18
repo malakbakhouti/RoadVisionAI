@@ -3,7 +3,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, UploadFile, status
 
 from app.core.dependencies import (
     CurrentUserDep,
@@ -166,5 +166,11 @@ async def request_analysis(
     db: DbSessionDep,
     settings: SettingsDep,
     storage: StorageDep,
+    background: BackgroundTasks,
 ) -> AnalysisAccepted:
-    return await _service(db, settings, storage).request_analysis(inspection_id, actor)
+    accepted = await _service(db, settings, storage).request_analysis(inspection_id, actor)
+    # Rule #3: the HTTP request ends now; the pipeline runs after the response.
+    from app.workers.analysis_worker import run_analysis
+
+    background.add_task(run_analysis, inspection_id, settings, storage)
+    return accepted

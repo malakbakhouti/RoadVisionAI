@@ -181,7 +181,15 @@ async def test_upload_rejects_non_image(client, road_section_id) -> None:
     assert resp.status_code == 415
 
 
-async def test_analyse_is_202_and_moves_state_machine(client, road_section_id) -> None:
+async def test_analyse_is_202_and_moves_state_machine(
+    client, road_section_id, monkeypatch
+) -> None:
+    # The worker pipeline has its own e2e suite (test_analysis_pipeline);
+    # here we test the 202 contract + SM1 transition in isolation.
+    async def _noop(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("app.workers.analysis_worker.run_analysis", _noop)
     headers = await _auth_headers(client)
     created = await _create_inspection(client, headers, road_section_id)
 

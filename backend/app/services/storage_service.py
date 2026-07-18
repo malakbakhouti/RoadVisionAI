@@ -37,6 +37,7 @@ class StorageService:
             access_key=settings.minio_access_key,
             secret_key=settings.minio_secret_key,
             secure=settings.minio_secure,
+            region="us-east-1",
         )
         # Presigned URLs are consumed by the person's browser, outside the
         # compose network: sign them against the public endpoint.
@@ -45,6 +46,7 @@ class StorageService:
             access_key=settings.minio_access_key,
             secret_key=settings.minio_secret_key,
             secure=settings.minio_secure,
+            region="us-east-1",
         )
 
     async def put_image(
@@ -81,6 +83,19 @@ class StorageService:
         await anyio.to_thread.run_sync(_put)
         log.info("object_stored", bucket=bucket, object=object_name, size=len(data))
         return StoredObject(bucket=bucket, object_name=object_name)
+
+    async def get_object(self, bucket: str, object_name: str) -> bytes:
+        """Download an object's bytes (model weights, configs)."""
+
+        def _get() -> bytes:
+            resp = self._client.get_object(bucket, object_name)
+            try:
+                return resp.read()
+            finally:
+                resp.close()
+                resp.release_conn()
+
+        return await anyio.to_thread.run_sync(_get)
 
     async def presigned_get_url(self, bucket: str, object_name: str) -> str:
         """Temporary download URL (1 h) — used by detail endpoints."""

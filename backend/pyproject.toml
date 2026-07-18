@@ -21,6 +21,8 @@ dependencies = [
     "python-multipart>=0.0.20",
     "pillow>=11.0",
     "reportlab>=4.2",
+    "ultralytics>=8.4",
+    "opencv-python-headless>=4.10",
 ]
 
 [dependency-groups]
@@ -51,3 +53,7 @@ testpaths = ["tests"]
 
 [tool.uv]
 package = false
+# ultralytics declares opencv-python (GUI variant needing X11 system libs);
+# the impossible marker nullifies it and opencv-python-headless (same cv2
+# API, zero system deps) is provided as a direct dependency instead.
+override-dependencies = ["opencv-python; sys_platform == 'never'"]
