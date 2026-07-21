@@ -49,6 +49,24 @@ def get_chroma_client(settings: SettingsDep):
     return _chroma_singleton
 
 
+_llm_singleton = None
+
+
+def get_llm_provider(settings: SettingsDep):
+    """Returns a Gemini provider, or None if no API key is configured
+    (the pipeline then falls back to rule justifications)."""
+    global _llm_singleton
+    if not settings.gemini_api_key:
+        return None
+    if _llm_singleton is None:
+        from app.ai.agents.gemini_provider import GeminiProvider
+
+        _llm_singleton = GeminiProvider(
+            settings.gemini_api_key, settings.gemini_model, settings.gemini_temperature
+        )
+    return _llm_singleton
+
+
 def get_embedder(settings: SettingsDep):
     global _embedder_singleton
     if _embedder_singleton is None:

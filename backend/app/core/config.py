@@ -74,6 +74,11 @@ class Settings(BaseSettings):
     rag_chunk_overlap: int = 50
     rag_top_k: int = 5
     rag_similarity_threshold: float = 0.75
+
+    # --- Gemini / LangGraph (SD05, TechStack §6) ---
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-pro"
+    gemini_temperature: float = 0.2
     minio_bucket_road_images: str = "road-images"
     minio_bucket_annotated: str = "annotated-images"
     minio_bucket_reports: str = "reports"

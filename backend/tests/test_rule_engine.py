@@ -237,7 +237,7 @@ async def test_generate_recommendation_grave_pothole(client) -> None:
     rec = resp.json()
     assert rec["strategy"] == "REHABILITATION"
     assert rec["status"] == "EN_ATTENTE"  # never born validated
-    assert "R020" in rec["justification"] and "48.00" in rec["justification"]
+    assert "48.00" in rec["justification"]  # rule code now lives in xai_explanations.rules_applied
     assert rec["estimated_days"] == 45
     assert rec["deadline"] is not None
     assert float(rec["confidence"]) == pytest.approx(0.66)

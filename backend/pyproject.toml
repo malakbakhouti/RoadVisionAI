@@ -28,6 +28,9 @@ dependencies = [
     "chromadb>=1.0",
     "pymupdf>=1.25",
     "sentence-transformers>=3.3",
+    "langgraph>=0.2",
+    "langchain-google-genai>=2.0",
+    "google-generativeai>=0.8",
 ]
 
 [dependency-groups]
@@ -65,6 +68,7 @@ override-dependencies = [
     "opencv-python; sys_platform == 'never'",
     # torch 2.13 declare des roues CUDA meme sur ARM64 Linux (support Grace) :
     # ~2,5 Go de paquets inutiles en dev Mac comme en production CPU DGR.
+    # Torch fonctionne en CPU sans ces dependances (chargement paresseux).
     "cuda-bindings; sys_platform == 'never'",
     "cuda-toolkit; sys_platform == 'never'",
     "nvidia-cudnn-cu13; sys_platform == 'never'",

@@ -1,8 +1,13 @@
-"""RecommendationService — deterministic recommendation generation (SD05, Step 1).
+"""RecommendationService — LangGraph pipeline + XAI (SD05, Steps 1+3).
 
-Chain: analysis_results + pci_scores  ->  RuleEngine  ->  maintenance_recommendations
-Status is always EN_ATTENTE: rule #1 (Human-in-the-Loop) means no recommendation
-is ever born validated. normative_refs starts empty — the RAG step grounds it.
+Chain: analysis + pci_scores
+    -> LangGraph [RuleEngine -> RAG retrieve -> Gemini narrate]
+    -> maintenance_recommendations (EN_ATTENTE, rule #1 HITL)
+    -> xai_explanations (rules, normative refs, priority breakdown, agents)
+
+The strategy is ALWAYS the deterministic RuleEngine's; Gemini only narrates and
+grounds. normative_refs come from the RAG (rule #6). If no LLM key / no RAG hit,
+the pipeline degrades gracefully to the rule justification and flags the gap.
 """
 
 import uuid
@@ -10,11 +15,12 @@ from datetime import UTC, datetime, timedelta
 
 import structlog
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.engines.rule_engine import AnalysisContext, evaluate
-from app.db.models.inspection import AnalysisResult, PciScore
+from app.ai.agents.recommendation_pipeline import run_pipeline
+from app.ai.engines.rule_engine import AnalysisContext
+from app.db.models.inspection import AnalysisResult, PciScore, XaiExplanation
 from app.db.models.maintenance import MaintenanceRecommendation, Rule
 from app.db.models.user import User
 from app.repositories.audit_repository import AuditRepository
@@ -23,9 +29,17 @@ log = structlog.get_logger("app.services.recommendation")
 
 
 class RecommendationService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, rag_search=None, llm_provider=None) -> None:
         self._session = session
+        self._rag_search = rag_search
+        self._llm = llm_provider
         self._audit = AuditRepository(session)
+
+    async def _default_rag(self, query: str) -> list[dict]:
+        return []
+
+    async def _default_llm(self, *, system: str, prompt: str) -> str:
+        return ""  # forces fallback to rule justification
 
     async def generate_for_analysis(
         self, analysis_result_id: uuid.UUID, actor: User
@@ -37,8 +51,7 @@ class RecommendationService:
         ).scalar_one_or_none()
         if analysis is None:
             raise HTTPException(
-                status.HTTP_404_NOT_FOUND,
-                f"Analysis result {analysis_result_id} not found",
+                status.HTTP_404_NOT_FOUND, f"Analysis result {analysis_result_id} not found"
             )
         existing = (
             await self._session.execute(
@@ -70,7 +83,37 @@ class RecommendationService:
             dominant_damage_type=analysis.dominant_damage_type,
             total_detections=analysis.total_detections or 0,
         )
-        decision = evaluate(rules, ctx)  # deterministic — LLM narrates later
+
+        # --- LangGraph pipeline (deterministic decision + grounded narration) ---
+        result = await run_pipeline(
+            ctx=ctx,
+            rules=rules,
+            rag_search=self._rag_search or self._default_rag,
+            llm_generate=(self._llm.generate if self._llm is not None else self._default_llm),
+        )
+        decision = result.decision
+
+        # --- XAI record ---
+        xai = XaiExplanation(
+            rules_applied=[{"code": decision.rule_code, "name": decision.rule_name}],
+            normative_refs=result.normative_refs,
+            priority_breakdown={
+                "pci": ctx.pci,
+                "severity": ctx.severity_level.value,
+                "priority": ctx.priority_level.value,
+                "dominant_type": ctx.dominant_damage_type,
+                "detections": ctx.total_detections,
+            },
+            confidence_score=analysis.recommendation_confidence,
+            severity_justification=(
+                f"PCI {ctx.pci:.2f} classé {ctx.severity_level.value} "
+                f"(priorité {ctx.priority_level.value})."
+            ),
+            strategy_justification=result.justification,
+            agents_involved=result.agents_involved,
+        )
+        self._session.add(xai)
+        await self._session.flush()
 
         rec = MaintenanceRecommendation(
             analysis_result_id=analysis_result_id,
@@ -83,9 +126,8 @@ class RecommendationService:
                 if decision.deadline_days
                 else None
             ),
-            justification=(
-                f"[Règle {decision.rule_code} — {decision.rule_name}] {decision.justification}"
-            ),
+            justification=result.justification,
+            normative_refs=result.normative_refs,
             confidence=analysis.recommendation_confidence,
         )
         self._session.add(rec)
@@ -98,7 +140,8 @@ class RecommendationService:
             new_value={
                 "strategy": decision.strategy.value,
                 "rule": decision.rule_code,
-                "pci": ctx.pci,
+                "normative_refs": len(result.normative_refs),
+                "missing_refs": result.missing_normative_refs,
             },
         )
         await self._session.commit()
@@ -107,7 +150,8 @@ class RecommendationService:
             "recommendation_generated",
             recommendation_id=str(rec.id),
             strategy=decision.strategy.value,
-            rule=decision.rule_code,
+            refs=len(result.normative_refs),
+            missing_refs=result.missing_normative_refs,
         )
         return rec
 
@@ -122,8 +166,6 @@ class RecommendationService:
         return rec
 
     async def list_pending(self, *, limit: int, offset: int):
-        from sqlalchemy import func
-
         base = select(MaintenanceRecommendation).where(
             MaintenanceRecommendation.status == "EN_ATTENTE"
         )
