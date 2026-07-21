@@ -33,6 +33,31 @@ def get_storage_service(settings: SettingsDep) -> StorageService:
     return _storage_singleton
 
 
+# --- RAG (ChromaDB + embeddings, SD07) -----------------------------------------
+_chroma_singleton = None
+_embedder_singleton = None
+
+
+def get_chroma_client(settings: SettingsDep):
+    global _chroma_singleton
+    if _chroma_singleton is None:
+        import chromadb
+
+        _chroma_singleton = chromadb.HttpClient(
+            host=settings.chroma_host, port=settings.chroma_port
+        )
+    return _chroma_singleton
+
+
+def get_embedder(settings: SettingsDep):
+    global _embedder_singleton
+    if _embedder_singleton is None:
+        from app.ai.rag.embeddings import E5Embedder
+
+        _embedder_singleton = E5Embedder(settings.embedding_model)
+    return _embedder_singleton
+
+
 # --- Security (SD01, RBAC per UC0-UC3) ---------------------------------------
 _bearer = HTTPBearer(auto_error=False)
 

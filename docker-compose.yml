@@ -74,6 +74,8 @@ services:
   backend:
     build: ./backend
     container_name: rv-backend
+    volumes:
+      - hf-cache:/srv/hf
     env_file: .env
     environment:
       POSTGRES_HOST: postgres
@@ -81,6 +83,7 @@ services:
       MINIO_PUBLIC_ENDPOINT: localhost:9000
       CHROMA_HOST: chromadb
       CHROMA_PORT: 8000
+      HF_HOME: /srv/hf
     depends_on:
       postgres:
         condition: service_healthy
@@ -100,6 +103,7 @@ services:
       - "80:80"
 
 volumes:
+  hf-cache:
   pg_data:
   chroma_data:
   minio_data:

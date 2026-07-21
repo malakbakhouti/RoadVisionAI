@@ -22,7 +22,12 @@ dependencies = [
     "pillow>=11.0",
     "reportlab>=4.2",
     "ultralytics>=8.4",
+    "torch>=2.6",
+    "torchvision>=0.21",
     "opencv-python-headless>=4.10",
+    "chromadb>=1.0",
+    "pymupdf>=1.25",
+    "sentence-transformers>=3.3",
 ]
 
 [dependency-groups]
@@ -56,4 +61,24 @@ package = false
 # ultralytics declares opencv-python (GUI variant needing X11 system libs);
 # the impossible marker nullifies it and opencv-python-headless (same cv2
 # API, zero system deps) is provided as a direct dependency instead.
-override-dependencies = ["opencv-python; sys_platform == 'never'"]
+override-dependencies = [
+    "opencv-python; sys_platform == 'never'",
+    # torch 2.13 declare des roues CUDA meme sur ARM64 Linux (support Grace) :
+    # ~2,5 Go de paquets inutiles en dev Mac comme en production CPU DGR.
+    "cuda-bindings; sys_platform == 'never'",
+    "cuda-toolkit; sys_platform == 'never'",
+    "nvidia-cudnn-cu13; sys_platform == 'never'",
+    "nvidia-cusparselt-cu13; sys_platform == 'never'",
+    "nvidia-nccl-cu13; sys_platform == 'never'",
+    "nvidia-nvshmem-cu13; sys_platform == 'never'",
+    "triton; sys_platform == 'never'",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

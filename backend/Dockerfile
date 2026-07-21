@@ -3,6 +3,9 @@
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS builder
 
 WORKDIR /build
+
+# Reseau instable : timeouts longs + telechargements moins paralleles
+ENV UV_HTTP_TIMEOUT=600 UV_CONCURRENT_DOWNLOADS=4
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/srv/venv
 
 COPY pyproject.toml uv.lock* ./
@@ -22,7 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 libglib2.0-0 libxcb1 libsm6 libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -r roadvision && useradd -r -g roadvision roadvision
+RUN groupadd -r roadvision && useradd -r -g roadvision roadvision \
+    && mkdir -p /srv/hf && chown roadvision:roadvision /srv/hf
 WORKDIR /srv/app
 
 COPY --from=builder /srv/venv /srv/venv

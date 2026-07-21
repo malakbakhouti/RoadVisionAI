@@ -65,6 +65,15 @@ class Settings(BaseSettings):
     # the SDK talks to minio:9000, but that hostname does not resolve outside
     # the compose network — so URLs are signed against this public endpoint.
     minio_public_endpoint: str = "localhost:9000"
+
+    # --- ChromaDB / RAG (SD07, TechStack §5) ---
+    chroma_host: str = "localhost"
+    chroma_port: int = 8001
+    embedding_model: str = "intfloat/multilingual-e5-small"
+    rag_chunk_size: int = 512
+    rag_chunk_overlap: int = 50
+    rag_top_k: int = 5
+    rag_similarity_threshold: float = 0.75
     minio_bucket_road_images: str = "road-images"
     minio_bucket_annotated: str = "annotated-images"
     minio_bucket_reports: str = "reports"

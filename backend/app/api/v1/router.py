@@ -10,7 +10,16 @@ Each business module (Steps 2-6) registers its APIRouter here, mapped
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, dashboard, health, inspections, models, reports
+from app.api.v1.endpoints import (
+    auth,
+    dashboard,
+    health,
+    inspections,
+    knowledge,
+    models,
+    recommendations,
+    reports,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -19,3 +28,5 @@ api_router.include_router(inspections.router)
 api_router.include_router(reports.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(models.router)
+api_router.include_router(recommendations.router)
+api_router.include_router(knowledge.router)
