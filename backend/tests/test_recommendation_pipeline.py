@@ -130,6 +130,26 @@ async def test_pipeline_survives_malformed_llm_output() -> None:
     assert result.missing_normative_refs is False
 
 
+async def test_pipeline_survives_llm_provider_exception() -> None:
+    """Fail-safe: if Gemini raises (quota, model retired, network), the pipeline
+    degrades to the rule justification + RAG passages — never propagates."""
+    rules = await _seeded_rules()
+
+    async def exploding_llm(*, system, prompt):
+        raise RuntimeError("429 quota exceeded / model not found")
+
+    result = await run_pipeline(
+        ctx=_ctx(60.0, "LONGITUDINAL_CRACK"),
+        rules=rules,
+        rag_search=fake_rag,
+        llm_generate=exploding_llm,
+    )
+    assert result.decision.strategy == MaintenanceStrategy.COLMATAGE
+    assert len(result.normative_refs) >= 1  # RAG passages salvaged
+    assert result.justification  # rule justification kept
+    assert result.missing_normative_refs is False
+
+
 async def test_pipeline_never_lets_llm_change_strategy() -> None:
     """Even if the LLM 'suggests' another strategy, the rule's decision stands."""
     rules = await _seeded_rules()

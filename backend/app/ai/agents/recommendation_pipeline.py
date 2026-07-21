@@ -107,19 +107,28 @@ def build_graph(*, rag_search, llm_generate):
             f"EXTRAITS NORMATIFS DISPONIBLES :\n{refs_block}\n\n"
             f"Rédige la justification en citant au moins un extrait ci-dessus."
         )
-        raw = await llm_generate(system=NARRATE_SYSTEM, prompt=prompt)
+        # Fallback references kept if the LLM fails or returns garbage: the RAG
+        # passages are still real, citable normative material (rule #6 upheld).
+        fallback_refs = [
+            {"title": p["title"], "page": f"{p['page_start']}-{p['page_end']}"}
+            for p in passages[:2]
+        ]
         try:
+            raw = await llm_generate(system=NARRATE_SYSTEM, prompt=prompt)
             parsed = json.loads(raw)
             justification = parsed.get("justification", "").strip()
-            cited = parsed.get("cited_refs", [])
-        except (json.JSONDecodeError, AttributeError):
-            # LLM returned non-JSON: fall back to the rule justification but
-            # keep the retrieved passages as references (still grounded).
+            cited = parsed.get("cited_refs", []) or fallback_refs
+        except (json.JSONDecodeError, AttributeError, TypeError):
+            # LLM returned non-JSON: keep rule justification, salvage passages.
             justification = decision.justification
-            cited = [
-                {"title": p["title"], "page": f"{p['page_start']}-{p['page_end']}"}
-                for p in passages[:2]
-            ]
+            cited = fallback_refs
+        except Exception as exc:
+            # ANY provider failure (quota, model retired, network, timeout) must
+            # NOT break recommendation generation: degrade to the rule
+            # justification, keep the grounded passages. Never a 500.
+            log.warning("llm_generation_failed", error=str(exc)[:200])
+            justification = decision.justification
+            cited = fallback_refs
         if not justification:
             justification = decision.justification
         return {
